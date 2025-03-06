@@ -1,6 +1,7 @@
 // authJwt.js
-import { verify } from 'jsonwebtoken';
-import { secret } from '../config/auth.config';
+import jwt from 'jsonwebtoken';
+// import { secret } from '../config/auth.config.js';
+
 
 /**
  * Verify the given token and send back a 403 response if invalid.

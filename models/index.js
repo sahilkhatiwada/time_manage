@@ -1,17 +1,20 @@
-import { DB, USER, PASSWORD, HOST, dialect as _dialect, pool as _pool } from '../config/db.config';
+import { DB, USER, PASSWORD, HOST, dialect } from '../config/db.config.js';
 import Sequelize from 'sequelize';
 
-const sequelize = new Sequelize(DB, USER, PASSWORD, {
+
+const sequelize = new Sequelize(DB, USER, PASSWORD,
+  
+   {
   host: HOST,
-  dialect: _dialect,
-  operatorsAliases: 0,
-  pool: {
-    max: _pool.max,
-    min: _pool.min,
-    acquire: _pool.acquire,
-    idle: _pool.idle
+  dialect: dialect,
+pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
   }
-});
+ });
+
 
 const db = {};
 
@@ -19,17 +22,10 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 // Import models
-db.User = require('./user.model')(sequelize, Sequelize);
-db.TeacherAvailability = require('./availability.model')(sequelize, Sequelize);
-db.MeetingRequest = require('./meeting.model')(sequelize, Sequelize);
-db.Post = require('./post.model')(sequelize, Sequelize);
-db.Comment = require('./comment.model')(sequelize, Sequelize);
+import User from './user.model.js';
 
-// Define associations
-Object.keys(db).forEach(modelName => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
-  }
-});
+// Initialize models
+db.User = User(sequelize, Sequelize);
 
-export default db;
+
+export { db, sequelize };

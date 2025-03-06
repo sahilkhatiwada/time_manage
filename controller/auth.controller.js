@@ -1,10 +1,22 @@
 // auth.controller.js
-import { sign } from 'jsonwebtoken';
-import { hashSync, compareSync } from 'bcryptjs';
-import { secret } from '../config/auth.config';
-import { user as _user } from '../models';
-const User = _user;
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
+import User from '../models/user.model.js';
+
+
+// Generate JWT token 
+const generateToken = (user) => {
+  return jwt.sign({
+    id: user.id,
+    email: user.email,
+    role: user.role
+  },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: '30d'
+    });
+}
 /**
  * Register a new user in the system.
  * @function signup
@@ -16,19 +28,40 @@ const User = _user;
  *                        successfully, otherwise sends an error message.
  */
 
-export async function signup(req, res) {
+export async function signup (req, res) {
   try {
-    const user = await User.create({
-      name: req.body.name,
-      email: req.body.email,
-      password: hashSync(req.body.password, 8),
-      role: req.body.role || 'student'
-    });
-    res.send({ message: "User registered successfully!" });
-  } catch (err) {
-    res.status(500).send({ message: err.message });
-  }
+    const { name, email, password, role } = req.body;
+    // Check if the user already exists
+    const existingUser = await User.findOne({ where: { email } });
+    // If the user already exists, send an error message
+    if (existingUser) {
+      return res.status(400).send({ message: 'Email already registered' });
+    }
+// Hash the password
+const hashedPassword = await bcrypt.hash(password, 10);
+
+// check if the user role is valid
+if (role !== 'student' && role !== 'teacher') {
+  return res.status(400).send({ message: 'Invalid role. Please choose either "student" or "teacher' });
 }
+    
+    // Create a new user
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role
+    });
+    // Send a success message
+    res.status(201).json({
+      message: "User registered successfully",
+      user: { id: newUser.id, name: newUser.name, email: newUser.email },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+    
+  }
+};
 
 /**
  * Signin a user in the system.
@@ -43,21 +76,29 @@ export async function signup(req, res) {
  */
 // controllers/auth.controller.js (modified signin)
 export async function signin (req, res)  {
-  try {
-    const user = await User.findOne({ where: { email: req.body.email } });
-    if (!user) return res.status(404).send({ message: "User Not found." });
-
-    const passwordValid = bcrypt.compareSync(req.body.password, user.password);
-    if (!passwordValid) return res.status(401).send({ message: "Invalid Password!" });
-
-    const token = jwt.sign({ id: user.id }, config.secret, { expiresIn: '1h' });
-    
-    res.status(200).send({
-      id: user.id,
-      role: user.role,
-      accessToken: token
+  try{
+    const { email, password } = req.body;
+    // Check if the user exists
+    const user = await User.findOne({ where: { email } });
+    // If the user doesn't exist, send an error message
+    if (!user) {
+      return res.status(404).send({ message: 'User not found' });
+    }
+    // Check if the password is correct
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // If the password is incorrect, send an error message
+    if (!isPasswordValid) {
+      return res.status(401).send({ message: 'Invalid password' });
+    }
+    // Generate a JWT token
+    const token = generateToken(user);
+    // Send a success message with user details and token
+    res.status(200).json({
+      message: 'User signed in successfully',
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      token,
     });
   } catch (err) {
     res.status(500).send({ message: err.message });
   }
-};
+} ;

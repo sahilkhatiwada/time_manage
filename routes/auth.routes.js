@@ -1,5 +1,5 @@
 // auth.routes.js
-import { signup, signin } from '../controllers/auth.controller';
+import { signup, signin } from '../controller/auth.controller.js';
 
 export default app => {
   app.post('/api/auth/signup', signup);
