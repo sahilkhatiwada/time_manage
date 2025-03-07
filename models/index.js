@@ -23,9 +23,11 @@ db.sequelize = sequelize;
 
 // Import models
 import User from './user.model.js';
+import admin from './admin.model.js';
 
 // Initialize models
 db.User = User(sequelize, Sequelize);
+db.admin = admin(sequelize, Sequelize);
 
 
 export { db, sequelize };

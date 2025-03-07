@@ -102,3 +102,6 @@ export async function signin (req, res)  {
     res.status(500).send({ message: err.message });
   }
 } ;
+
+//  Protected routes middleware(Verify Token)
+
